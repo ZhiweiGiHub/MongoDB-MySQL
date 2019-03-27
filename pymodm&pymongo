@@ -1,8 +1,10 @@
 from pymodm.connection import connect
 connect("mongodb://localhost:27017/admin", alias="my-app")
+
 """
-关于连接admin数据库后，在另一指定数据库写入数据
+关于连接admin数据库后，在另一指定数据库写入数据(针对pymodm)
 """
+
 mongo_uri = "mongodb://@192.168.x.x:27017/Test?authSource=admin
 connect(mongo_uri,alias="my-app")
 
@@ -75,4 +77,24 @@ result = db.things.insert_many([{"x": 1, "tags": ["dog", "cat"]},
                                  {"x": 2, "tags": ["mouse", "cat", "dog"]},
                                  {"x": 3, "tags": []}])
 result.inserted_ids #每个条目对应的内存ID
+
+#######################################
+一个插入例子——厦大
+
+
+import pymongo
+
+url = "mongodb://localhost:27017/admin"
+client = pymongo.MongoClient(url)
+db = client.Mymongo #指定库
+
+# 插入多条数据
+db.data.insert_one({'a': 'Fujian', 'b': 'Xiamen', 'c': 1.25, 'd': 6})
+data = [{'a': 'Zhejiang', 'b': 'Hangzhou', 'c': 2.6, 'd': 3}, 
+        {'a': 'Guangdong', 'b': 'Shenzhen', 'c': 1.7, 'd': 5}]    # a, b ,c为列名
+db.data.insert_many(data)
+
+
+# 更新
+db.data.update_one({'d': 5}, {'$set': {'b': 'Fuzhou'} })   #前面时一个condition，表示更新的行
 
