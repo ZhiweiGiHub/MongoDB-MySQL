@@ -1,0 +1,78 @@
+from pymodm.connection import connect
+connect("mongodb://localhost:27017/admin", alias="my-app")
+"""
+关于连接admin数据库后，在另一指定数据库写入数据
+"""
+mongo_uri = "mongodb://@192.168.x.x:27017/Test?authSource=admin
+connect(mongo_uri,alias="my-app")
+
+
+############################################
+
+from pymongo.write_concern import WriteConcern
+from pymodm import MongoModel, fields, EmbeddedMongoModel
+
+class User(MongoModel):
+    email = fields.EmailField(primary_key=True)
+    first_name = fields.CharField()
+    last_name = fields.CharField()
+
+    class Meta:
+        write_concern = WriteConcern(j=True)
+        connection_alias = 'my-app'
+        
+class Comment(EmbeddedMongoModel):
+    author = fields.ReferenceField(User)
+    content = fields.CharField()
+
+class Post(MongoModel):           #类似于一个表，调用时如：Post.title
+    title = fields.CharField()    #类似于字段
+    author = fields.ReferenceField(User)
+    revised_on = fields.DateTimeField()
+    content = fields.CharField()
+    comments = fields.EmbeddedDocumentListField(Comment) #chagelog标注属性名做了修改
+    class Meta:
+        write_concern = WriteConcern(j=True)   #固有的写入mongodb模块
+        connection_alias = 'my-app'
+        
+"""
+Saving Instances
+"""
+
+#User('user@email.com', 'Bob', 'Ross').save()
+users = [
+    User('user@email.com', 'Jack', 'Boss'),
+    User('anotheruser@email.com', 'David', 'Attenborough')
+]
+User.objects.bulk_create(users)
+
+
+post = Post(author='Zhiwei', content='This is the first post!').save()
+
+
+"""
+Updating Documents
+"""
+
+import datetime
+# Set the revised_on attribute of our Post from earlier.
+post.revised_on = datetime.datetime.now()
+# Save the revised document.
+post.save()
+
+#或者
+Post.objects.raw({'revised_on': {'$exists': False}}).update(
+    {'$set': {'revised_on': datetime.datetime.now()}})
+    
+    
+    
+##################################
+第二种插入Mongodb方式
+from pymongo import MongoClient
+db = MongoClient().aggregation_example  #创建一个database
+result = db.things.insert_many([{"x": 1, "tags": ["dog", "cat"]},
+                                 {"x": 2, "tags": ["cat"]},
+                                 {"x": 2, "tags": ["mouse", "cat", "dog"]},
+                                 {"x": 3, "tags": []}])
+result.inserted_ids #每个条目对应的内存ID
+
